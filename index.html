@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Educational Slot Machine</title>
+<style>
+body { font-family: Arial, sans-serif; text-align: center; background: #f0f2f5; color:#222; }
+.language-select { margin-top: 15px; font-size: 18px; padding: 5px; }
+
+.reels-container { display: flex; justify-content: center; margin-top: 20px; gap: 15px; }
+.reel-wrapper { display: flex; flex-direction: column; align-items: center; }
+.reel-label { font-size: 16px; font-weight: bold; margin-bottom: 5px; padding: 4px 10px; border-radius: 6px; color: white; }
+.reel { width: 280px; height: 140px; border: 5px solid #222; background: #fff; border-radius: 12px; overflow: hidden; position: relative; box-shadow: 4px 4px 15px rgba(0,0,0,0.3); }
+.reel-inner { position: absolute; width: 100%; top: 0; }
+.reel-item { height: 140px; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: bold; }
+
+button { font-size: 22px; padding: 12px 30px; margin-top: 20px; cursor: pointer; border-radius:6px; background:#0077cc; color:white; border:none; }
+button:hover { background:#005fa3; }
+
+.examples { max-width: 900px; margin: 30px auto; text-align: left; }
+.example-box { background: white; border-left: 8px solid #0077cc; padding: 20px; margin-bottom: 15px; border-radius: 10px; box-shadow: 2px 2px 10px rgba(0,0,0,0.1); font-size: 18px; font-weight: bold; }
+.example-box.ks5 { border-left-color: #9b59b6; }
+</style>
+</head>
+<body>
+
+<h2>🎰 Build a Response</h2>
+
+<select id="language" class="language-select">
+  <option value="EN" selected>English</option>
+  <option value="FR">Français</option>
+  <option value="ES">Español</option>
+  <option value="DE">Deutsch</option>
+</select>
+
+<div class="reels-container">
+  <div class="reel-wrapper">
+    <div class="reel-label" style="background:#3498db;">ROLE</div>
+    <div class="reel"><div class="reel-inner" id="reel1"></div></div>
+  </div>
+  <div class="reel-wrapper">
+    <div class="reel-label" style="background:#27ae60;">STATISTIC</div>
+    <div class="reel"><div class="reel-inner" id="reel2"></div></div>
+  </div>
+  <div class="reel-wrapper">
+    <div class="reel-label" style="background:#e67e22;">LANGUAGE / SOLUTION</div>
+    <div class="reel"><div class="reel-inner" id="reel3"></div></div>
+  </div>
+</div>
+
+<button onclick="spin()">Spin</button>
+
+<div class="examples">
+  <div class="example-box">
+    <strong>Sample Responses (KS4)</strong>
+    <p id="ks4">—</p>
+  </div>
+  <div class="example-box ks5">
+    <strong>Sample Responses (KS5)</strong>
+    <p id="ks5">—</p>
+  </div>
+</div>
+
+<!-- Local spin sound -->
+<audio id="spinSound" src="spin.mp3"></audio>
+
+<script>
+// Roles (with emojis)
+const roles = {
+  EN:["🌾 Farmer","🤝 NGO organisation","🧍 Citizen","🏢 Business CEO"],
+  FR:["🌾 Agriculteur","🤝 Organisation ONG","🧍 Citoyen","🏢 PDG d’entreprise"],
+  ES:["🌾 Agricultor","🤝 Organización ONG","🧍 Ciudadano","🏢 Director ejecutivo"],
+  DE:["🌾 Bauer","🤝 NGO-Organisation","🧍 Bürger","🏢 Geschäftsführer"]
+};
+
+// Stats
+const stats = {
+  EN:["29% of forests are managed for wood and other products","12% of forests are designated for biodiversity conservation","9% of forests are designated for soil and water protection","5% of forests are designated for social services such as recreation, culture and education"],
+  FR:["29 % des forêts sont gérées pour le bois et d’autres produits","12 % des forêts sont désignées pour la conservation de la biodiversité","9 % des forêts sont désignées pour la protection des sols et de l’eau","5 % des forêts sont désignées pour les services sociaux comme les loisirs, la culture et l’éducation"],
+  ES:["El 29 % de los bosques se gestionan para la madera y otros productos","El 12 % de los bosques están designados para la conservación de la biodiversidad","El 9 % de los bosques están designados para la protección del suelo y del agua","El 5 % de los bosques están designados para servicios sociales como recreación, cultura y educación"],
+  DE:["29 % der Wälder werden für Holz und andere Produkte genutzt","12 % der Wälder sind für den Schutz der Biodiversität ausgewiesen","9 % der Wälder sind für den Schutz von Boden und Wasser ausgewiesen","5 % der Wälder sind für soziale Dienstleistungen wie Erholung, Kultur und Bildung ausgewiesen"]
+};
+
+// Prompts
+const prompts = [
+  {key:"conditional", text:"Use the conditional tense"},
+  {key:"future", text:"Use the future tense"},
+  {key:"vocab", text:"Include key vocabulary: reduce, protect, waste, sustainable"},
+  {key:"starter", text:"Start with: It would be possible to…"}
+];
+const promptTexts = prompts.map(p=>p.text);
+
+// Build reels
+function buildReel(items,reelId){
+  const reel=document.getElementById(reelId); reel.innerHTML="";
+  for(let i=0;i<10;i++){items.forEach(text=>{
+    const div=document.createElement("div"); div.className="reel-item"; div.innerText=text; reel.appendChild(div);
+  });}
+}
+buildReel(roles.EN,"reel1"); buildReel(stats.EN,"reel2"); buildReel(promptTexts,"reel3");
+
+// Remove emoji and lowercase first letter if mid-sentence, except NGO
+function cleanRoleForSentence(role){
+  let clean = role.replace(/^[^\w\s]+ /, ''); // remove emoji
+  let words = clean.split(' ');
+  for(let i=0;i<words.length;i++){
+    if(words[i].toUpperCase() === "NGO") continue; // keep NGO capital
+    if(i === 0) words[i] = words[i].charAt(0).toLowerCase() + words[i].slice(1);
+  }
+  return words.join(' ');
+}
+
+// Generate sentence with correct article in English
+function generateSentence(lang, role, stat, promptKey){
+  let roleClean = cleanRoleForSentence(role);
+  let roleWithArticle = roleClean;
+
+  // English: handle a/an and NGO
+  if(lang === "EN") {
+    if(roleClean.toUpperCase().includes("NGO")) {
+      roleWithArticle = roleClean.replace(/^ngo/i, "an NGO");
+    } else {
+      const firstLetter = roleClean.charAt(0).toLowerCase();
+      const vowels = ['a','e','i','o','u'];
+      roleWithArticle = (vowels.includes(firstLetter) ? "an " : "a ") + roleClean;
+    }
+  }
+
+  let ks4="", ks5="";
+  switch(promptKey){
+    case "conditional":
+      if(lang==="EN"){ks4=`As ${roleWithArticle}, it would be possible to protect forests better because ${stat}.`; 
+      ks5=`From the perspective of ${roleWithArticle}, it would be possible to adopt more sustainable practices. Given that ${stat}, we could reduce waste and protect forest resources more effectively.`;}
+      else if(lang==="FR"){ks4=`En tant que ${roleClean}, il serait possible de mieux protéger les forêts car ${stat}.`; 
+      ks5=`Du point de vue d’un ${roleClean}, il serait possible d’adopter des pratiques plus durables. Étant donné que ${stat}, nous pourrions réduire le gaspillage et protéger davantage les ressources forestières.`;}
+      else if(lang==="ES"){ks4=`Como ${roleClean}, sería posible proteger mejor los bosques porque ${stat}.`; 
+      ks5=`Desde la perspectiva de un ${roleClean}, sería posible adoptar prácticas más sostenibles. Dado que ${stat}, podríamos reducir el desperdicio y proteger mejor los recursos forestales.`;}
+      else if(lang==="DE"){ks4=`Als ${roleClean} wäre es möglich, die Wälder besser zu schützen, da ${stat}.`; 
+      ks5=`Aus der Sicht eines ${roleClean} wäre es möglich, nachhaltigere Maßnahmen zu ergreifen. Da ${stat}, könnten wir Abfall reduzieren und die Waldressourcen besser schützen.`;}
+      break;
+    // other promptKey cases (future, vocab, starter) remain unchanged, but use roleWithArticle for English
+    case "future":
+      if(lang==="EN"){ks4=`As ${roleWithArticle}, it will be important to protect forests because ${stat}.`; 
+      ks5=`From the perspective of ${roleWithArticle}, we will adopt sustainable practices. Given that ${stat}, we will reduce waste and protect forest resources in the future.`;}
+      else if(lang==="FR"){ks4=`En tant que ${roleClean}, il faudra protéger les forêts car ${stat}.`; 
+      ks5=`Du point de vue d’un ${roleClean}, nous adopterons des pratiques durables. Étant donné que ${stat}, il faudra réduire le gaspillage et protéger les ressources forestières à l’avenir.`;}
+      else if(lang==="ES"){ks4=`Como ${roleClean}, será importante proteger los bosques porque ${stat}.`; 
+      ks5=`Desde la perspectiva de un ${roleClean}, adoptaremos prácticas sostenibles. Dado que ${stat}, será necesario reducir el desperdicio y proteger los recursos forestales en el futuro.`;}
+      else if(lang==="DE"){ks4=`Als ${roleClean} wird es wichtig sein, die Wälder zu schützen, da ${stat}.`; 
+      ks5=`Aus der Sicht eines ${roleClean} werden wir nachhaltige Praktiken umsetzen. Da ${stat}, werden wir Abfall reduzieren und die Waldressourcen in Zukunft schützen.`;}
+      break;
+    case "vocab":
+      if(lang==="EN"){ks4=`As ${roleWithArticle}, it is possible to protect forests and reduce waste sustainably. ${stat}.`; 
+      ks5=`From the perspective of ${roleWithArticle}, we must reduce waste, protect forests, and act sustainably. ${stat}.`;}
+      else if(lang==="FR"){ks4=`En tant que ${roleClean}, il est possible de protéger les forêts et réduire le gaspillage de manière durable. ${stat}.`; 
+      ks5=`Du point de vue d’un ${roleClean}, il faut réduire le gaspillage, protéger les forêts et agir de manière durable. ${stat}.`;}
+      else if(lang==="ES"){ks4=`Como ${roleClean}, es posible proteger los bosques y reducir el desperdicio de manera sostenible. ${stat}.`; 
+      ks5=`Desde la perspectiva de un ${roleClean}, debemos reducir el desperdicio, proteger los bosques y actuar de manera sostenible. ${stat}.`;}
+      else if(lang==="DE"){ks4=`Als ${roleClean} ist es möglich, die Wälder zu schützen und Abfall nachhaltig zu reduzieren. ${stat}.`; 
+      ks5=`Aus der Sicht eines ${roleClean} müssen wir Abfall reduzieren, Wälder schützen und nachhaltig handeln. ${stat}.`;}
+      break;
+    case "starter":
+      if(lang==="EN"){ks4=`It would be possible to protect forests as ${roleWithArticle}. ${stat}.`; 
+      ks5=`It would be possible, from the perspective of ${roleWithArticle}, to adopt sustainable practices. ${stat}.`;}
+      else if(lang==="FR"){ks4=`Il serait possible de protéger les forêts en tant que ${roleClean}. ${stat}.`; 
+      ks5=`Il serait possible, du point de vue d’un ${roleClean}, d’adopter des pratiques durables. ${stat}.`;}
+      else if(lang==="ES"){ks4=`Sería posible proteger los bosques como ${roleClean}. ${stat}.`; 
+      ks5=`Sería posible, desde la perspectiva de un ${roleClean}, adoptar prácticas sostenibles. ${stat}.`;}
+      else if(lang==="DE"){ks4=`Es wäre möglich, die Wälder als ${roleClean} zu schützen. ${stat}.`; 
+      ks5=`Es wäre möglich, aus der Sicht eines ${roleClean}, nachhaltige Praktiken umzusetzen. ${stat}.`;}
+      break;
+  }
+  return {ks4,ks5};
+}
+
+// Spin function
+function spin(){
+  const lang=document.getElementById("language").value;
+  const reel1Items=roles[lang]; const reel2Items=stats[lang];
+  buildReel(reel1Items,"reel1"); buildReel(reel2Items,"reel2"); buildReel(promptTexts,"reel3");
+
+  const spinSound = document.getElementById("spinSound");
+  spinSound.currentTime = 0;
+  spinSound.volume = 0.5;
+  spinSound.play().catch(e=>console.log("Audio blocked: "+e));
+
+  const reels=[
+    {id:"reel1", items:reel1Items, finalIndex: Math.floor(Math.random()*reel1Items.length)},
+    {id:"reel2", items:reel2Items, finalIndex: Math.floor(Math.random()*reel2Items.length)},
+    {id:"reel3", items:promptTexts, finalIndex: Math.floor(Math.random()*promptTexts.length)}
+  ];
+
+  reels.forEach((reel,idx)=>{
+    const element=document.getElementById(reel.id); let pos=0;
+    const interval=setInterval(()=>{pos-=20;element.style.top=pos+"px";},50);
+    setTimeout(()=>{clearInterval(interval); element.style.top=(-reel.finalIndex*140)+"px";},1000+idx*500);
+  });
+
+  setTimeout(()=>{
+    spinSound.pause();
+    const role=reel1Items[reels[0].finalIndex];
+    const stat=reel2Items[reels[1].finalIndex];
+    const promptKey=prompts[reels[2].finalIndex].key;
+    const {ks4,ks5}=generateSentence(lang,role,stat,promptKey);
+    document.getElementById("ks4").innerText=ks4;
+    document.getElementById("ks5").innerText=ks5;
+  },2800);
+}
+</script>
+
+</body>
+</html>
