@@ -98,18 +98,18 @@ function buildReel(items,reelId){
 }
 buildReel(roles.EN,"reel1"); buildReel(stats.EN,"reel2"); buildReel(promptTexts,"reel3");
 
-// Remove emoji and lowercase first letter if mid-sentence, except NGO
+// Remove emoji and lowercase first letter if mid-sentence, except NGO & PDG
 function cleanRoleForSentence(role){
   let clean = role.replace(/^[^\w\s]+ /, ''); // remove emoji
   let words = clean.split(' ');
   for(let i=0;i<words.length;i++){
-    if(words[i].toUpperCase() === "NGO") continue; // keep NGO capital
+    if(["NGO","PDG"].includes(words[i].toUpperCase())) continue; // keep capitals
     if(i === 0) words[i] = words[i].charAt(0).toLowerCase() + words[i].slice(1);
   }
   return words.join(' ');
 }
 
-// Generate sentence with correct article in English and French fix
+// Generate sentence
 function generateSentence(lang, role, stat, promptKey){
   let roleClean = cleanRoleForSentence(role);
   let roleWithArticle = roleClean;
@@ -125,20 +125,13 @@ function generateSentence(lang, role, stat, promptKey){
     }
   }
 
-  // French: handle En tant qu’organisation
-  if(lang === "FR") {
-    if(roleClean.toLowerCase().startsWith("organisation")) {
-      roleWithArticle = "En tant qu'organisation " + roleClean.replace(/^organisation /i,"");
-    }
-  }
-
   let ks4="", ks5="";
   switch(promptKey){
     case "conditional":
       if(lang==="EN"){ks4=`As ${roleWithArticle}, it would be possible to protect forests better because ${stat}.`; 
       ks5=`From the perspective of ${roleWithArticle}, it would be possible to adopt more sustainable practices. Given that ${stat}, we could reduce waste and protect forest resources more effectively.`;}
-      else if(lang==="FR"){ks4=`En tant que ${roleWithArticle}, il serait possible de mieux protéger les forêts car ${stat}.`; 
-      ks5=`Du point de vue d’un ${roleWithArticle}, il serait possible d’adopter des pratiques plus durables. Étant donné que ${stat}, nous pourrions réduire le gaspillage et protéger davantage les ressources forestières.`;}
+      else if(lang==="FR"){ks4=`En tant que ${roleClean}, il serait possible de mieux protéger les forêts car ${stat}.`; 
+      ks5=`Du point de vue d’un ${roleClean}, il serait possible d’adopter des pratiques plus durables. Étant donné que ${stat}, nous pourrions réduire le gaspillage et protéger davantage les ressources forestières.`;}
       else if(lang==="ES"){ks4=`Como ${roleClean}, sería posible proteger mejor los bosques porque ${stat}.`; 
       ks5=`Desde la perspectiva de un ${roleClean}, sería posible adoptar prácticas más sostenibles. Dado que ${stat}, podríamos reducir el desperdicio y proteger mejor los recursos forestales.`;}
       else if(lang==="DE"){ks4=`Als ${roleClean} wäre es möglich, die Wälder besser zu schützen, da ${stat}.`; 
@@ -147,8 +140,8 @@ function generateSentence(lang, role, stat, promptKey){
     case "future":
       if(lang==="EN"){ks4=`As ${roleWithArticle}, it will be important to protect forests because ${stat}.`; 
       ks5=`From the perspective of ${roleWithArticle}, we will adopt sustainable practices. Given that ${stat}, we will reduce waste and protect forest resources in the future.`;}
-      else if(lang==="FR"){ks4=`En tant que ${roleWithArticle}, il faudra protéger les forêts car ${stat}.`; 
-      ks5=`Du point de vue d’un ${roleWithArticle}, nous adopterons des pratiques durables. Étant donné que ${stat}, il faudra réduire le gaspillage et protéger les ressources forestières à l’avenir.`;}
+      else if(lang==="FR"){ks4=`En tant que ${roleClean}, il faudra protéger les forêts car ${stat}.`; 
+      ks5=`Du point de vue d’un ${roleClean}, nous adopterons des pratiques durables. Étant donné que ${stat}, il faudra réduire le gaspillage et protéger les ressources forestières à l’avenir.`;}
       else if(lang==="ES"){ks4=`Como ${roleClean}, será importante proteger los bosques porque ${stat}.`; 
       ks5=`Desde la perspectiva de un ${roleClean}, adoptaremos prácticas sostenibles. Dado que ${stat}, será necesario reducir el desperdicio y proteger los recursos forestales en el futuro.`;}
       else if(lang==="DE"){ks4=`Als ${roleClean} wird es wichtig sein, die Wälder zu schützen, da ${stat}.`; 
@@ -157,8 +150,8 @@ function generateSentence(lang, role, stat, promptKey){
     case "vocab":
       if(lang==="EN"){ks4=`As ${roleWithArticle}, it is possible to protect forests and reduce waste sustainably. ${stat}.`; 
       ks5=`From the perspective of ${roleWithArticle}, we must reduce waste, protect forests, and act sustainably. ${stat}.`;}
-      else if(lang==="FR"){ks4=`En tant que ${roleWithArticle}, il est possible de protéger les forêts et réduire le gaspillage de manière durable. ${stat}.`; 
-      ks5=`Du point de vue d’un ${roleWithArticle}, il faut réduire le gaspillage, protéger les forêts et agir de manière durable. ${stat}.`;}
+      else if(lang==="FR"){ks4=`En tant que ${roleClean}, il est possible de protéger les forêts et réduire le gaspillage de manière durable. ${stat}.`; 
+      ks5=`Du point de vue d’un ${roleClean}, il faut réduire le gaspillage, protéger les forêts et agir de manière durable. ${stat}.`;}
       else if(lang==="ES"){ks4=`Como ${roleClean}, es posible proteger los bosques y reducir el desperdicio de manera sostenible. ${stat}.`; 
       ks5=`Desde la perspectiva de un ${roleClean}, debemos reducir el desperdicio, proteger los bosques y actuar de manera sostenible. ${stat}.`;}
       else if(lang==="DE"){ks4=`Als ${roleClean} ist es möglich, die Wälder zu schützen und Abfall nachhaltig zu reduzieren. ${stat}.`; 
@@ -167,8 +160,8 @@ function generateSentence(lang, role, stat, promptKey){
     case "starter":
       if(lang==="EN"){ks4=`It would be possible to protect forests as ${roleWithArticle}. ${stat}.`; 
       ks5=`It would be possible, from the perspective of ${roleWithArticle}, to adopt sustainable practices. ${stat}.`;}
-      else if(lang==="FR"){ks4=`Il serait possible de protéger les forêts en tant que ${roleWithArticle}. ${stat}.`; 
-      ks5=`Il serait possible, du point de vue d’un ${roleWithArticle}, d’adopter des pratiques durables. ${stat}.`;}
+      else if(lang==="FR"){ks4=`Il serait possible de protéger les forêts en tant que ${roleClean}. ${stat}.`; 
+      ks5=`Il serait possible, du point de vue d’un ${roleClean}, d’adopter des pratiques durables. ${stat}.`;}
       else if(lang==="ES"){ks4=`Sería posible proteger los bosques como ${roleClean}. ${stat}.`; 
       ks5=`Sería posible, desde la perspectiva de un ${roleClean}, adoptar prácticas sostenibles. ${stat}.`;}
       else if(lang==="DE"){ks4=`Es wäre möglich, die Wälder als ${roleClean} zu schützen. ${stat}.`; 
