@@ -191,7 +191,7 @@ function spin(){
   reels.forEach((reel,idx)=>{
     const element=document.getElementById(reel.id); let pos=0;
     const interval=setInterval(()=>{pos-=20;element.style.top=pos+"px";},50);
-    setTimeout(()=>{clearInterval(interval); element.style.top=(-reel.finalIndex*105)+"px";},1000+idx*500);
+    setTimeout(()=>{clearInterval(interval); element.style.top=(-reel.finalIndex*140)+"px";},1000+idx*500);
   });
 
   setTimeout(()=>{
